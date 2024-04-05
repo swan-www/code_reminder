@@ -102,40 +102,42 @@ pub const CodeReminder = struct {
         }
     }
 
-    pub fn buildCheck(self: CodeReminder, b: *std.Build, comptime source_loc: std.builtin.SourceLocation, opt_message: ?[]const u8) void {
-		_ = blk: {
-			if (self.is_enabled) {
-				const na_str = "N/A";
-				var prop_num_str: []u8 = try b.allocator.dupe(u8, na_str);
-				defer if (!std.mem.eql(u8, prop_num_str, na_str)) b.allocator.free(prop_num_str);
+	fn buildCheckInner(self: CodeReminder, b: *std.Build, comptime source_loc: std.builtin.SourceLocation, opt_message: ?[]const u8) void {
+		if (self.is_enabled) {
+			const na_str = "N/A";
+			var prop_num_str: []u8 = try b.allocator.dupe(u8, na_str);
+			defer if (!std.mem.eql(u8, prop_num_str, na_str)) b.allocator.free(prop_num_str);
 
-				if (self.proposal_number) |number| {
-					prop_num_str = try std.fmt.allocPrint(b.allocator, "{}", .{number});
-				}
-
-				const line_num_str = std.fmt.comptimePrint("{}", .{source_loc.line});
-				const column_num_str = std.fmt.comptimePrint("{}", .{source_loc.column});
-
-				const err_str = try std.mem.concat(
-					b.allocator,
-					u8,
-					&.{
-						"CodeReminder:{",
-						self.reminder_name,
-						"} with proposal_id {",
-						prop_num_str,
-						"} triggered at ",
-						source_loc.file,
-						":", line_num_str,
-						":", column_num_str,
-						" -- \"",
-						opt_message orelse "",
-						"\"" 
-					}
-				);
-				std.log.warn("{s}", .{err_str});
+			if (self.proposal_number) |number| {
+				prop_num_str = try std.fmt.allocPrint(b.allocator, "{}", .{number});
 			}
-			break :blk;
-    	} catch |err| std.debug.panic("CodeReminder.buildCheck encountered error: {s}", .{@errorName(err)});
+
+			const line_num_str = std.fmt.comptimePrint("{}", .{source_loc.line});
+			const column_num_str = std.fmt.comptimePrint("{}", .{source_loc.column});
+
+			const err_str = try std.mem.concat(
+				b.allocator,
+				u8,
+				&.{
+					"CodeReminder:{",
+					self.reminder_name,
+					"} with proposal_id {",
+					prop_num_str,
+					"} triggered at ",
+					source_loc.file,
+					":", line_num_str,
+					":", column_num_str,
+					" -- \"",
+					opt_message orelse "",
+					"\"" 
+				}
+			);
+			std.log.warn("{s}", .{err_str});
+		}
+	}
+
+    pub fn buildCheck(self: CodeReminder, b: *std.Build, comptime source_loc: std.builtin.SourceLocation, opt_message: ?[]const u8) void {
+		buildCheckInner(self, b, source_loc, opt_message)
+			catch |err| std.debug.panic("CodeReminder.buildCheck encountered error: {s}", .{@errorName(err)});
     }
 };
